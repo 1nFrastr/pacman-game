@@ -24,6 +24,9 @@ export default function KaplayPacman() {
 
   useEffect(() => {
     if (!canvasRef.current) return;
+    canvasRef.current.tabIndex = 0;
+    canvasRef.current.focus();
+    canvasRef.current.addEventListener("mousedown", () => canvasRef.current?.focus());
     const k = kaplay({
       canvas: canvasRef.current,
       width: COLS * TILE,
@@ -115,6 +118,7 @@ export default function KaplayPacman() {
     k.onKeyDown(["left", "a"], () => tryTurn("left"));
     k.onKeyDown(["right", "d"], () => tryTurn("right"));
     k.onKeyPress(["space"], () => { if (status === "ready") { status = "playing"; hudPush(); } });
+    k.onMousePress(() => { if (status === "ready") { status = "playing"; hudPush(); } });
 
     function tryTurn(d: string) {
       if (status === "ready") { status = "playing"; hudPush(); }
@@ -260,7 +264,7 @@ export default function KaplayPacman() {
           {hud.status === "win" ? "🏆 胜利!" : hud.status === "over" ? "💀 游戏结束" : "方向键 / WASD 移动"}
         </span>
       </div>
-      <canvas ref={canvasRef} className="rounded-lg border border-foreground/10" />
+      <canvas ref={canvasRef} tabIndex={0} className="rounded-lg border border-foreground/10 outline-none focus:border-yellow-300/60" />
       <div className="flex gap-3">
         <button
           onClick={() => restartRef.current()}
