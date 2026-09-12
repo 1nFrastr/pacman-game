@@ -9,8 +9,8 @@ import {
 type Pos = { x: number; y: number };
 type Ghost = Pos & { dir: Dir; frightened: boolean };
 
-const SPEED = 140; // ms per tile
-const GHOST_SPEED = 165;
+const SPEED = 170; // ms per tile
+const GHOST_SPEED = 260;
 
 function opposite(d: Dir): Dir {
   return d === "up" ? "down" : d === "down" ? "up" : d === "left" ? "right" : "left";
@@ -184,7 +184,7 @@ export default function PacmanGame() {
       let chosen: Dir;
       if (g.frightened) {
         chosen = options[Math.floor(Math.random() * options.length)];
-      } else if (idx === 0 && Math.random() < 0.7) {
+      } else if (idx === 0 && Math.random() < 0.4) {
         // chase: minimize distance to pac
         options.sort((a, b) => {
           const d = (dir: Dir) =>
