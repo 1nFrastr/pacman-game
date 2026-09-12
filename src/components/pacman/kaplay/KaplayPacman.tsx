@@ -83,7 +83,7 @@ export default function KaplayPacman() {
           k.pos(cx(g.x), cy(g.y)),
           k.anchor("center"),
           "ghost",
-          { tile: { ...g }, dir: DIRS[i].dir, gd: { color: GHOST_COLORS[i], frightened: false }, },
+          { tile: { ...g }, dir: DIR_LIST[i], gd: { color: GHOST_COLORS[i], frightened: false } },
         ]);
         attachGhostDraw(gh, k, graceRef);
         return gh;
