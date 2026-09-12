@@ -57,7 +57,7 @@ function drawPac(ctx: CanvasRenderingContext2D, p: FPos, dir: Dir, t: number, fr
 }
 
 function drawGhost(ctx: CanvasRenderingContext2D, g: Ghost, i: number) {
-  const cx = g.x * TILE + TILE / 2, cy = g.y * TILE + TILE / 2, r = TILE / 2 - 2;
+  const cx = g.fx * TILE + TILE / 2, cy = g.fy * TILE + TILE / 2, r = TILE / 2 - 2;
   ctx.fillStyle = g.frightened ? "#2b5cff" : GHOST_COLORS[i];
   ctx.beginPath();
   ctx.arc(cx, cy - 2, r, Math.PI, 0);
