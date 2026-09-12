@@ -95,6 +95,7 @@ export default function PacmanGame() {
       frightened: false,
     })),
     frightTimer: 0,
+    grace: 2200,
     anim: 0,
     status: "ready" as typeof status,
   });
@@ -183,7 +184,7 @@ export default function PacmanGame() {
       let chosen: Dir;
       if (g.frightened) {
         chosen = options[Math.floor(Math.random() * options.length)];
-      } else if (idx === 0) {
+      } else if (idx === 0 && Math.random() < 0.7) {
         // chase: minimize distance to pac
         options.sort((a, b) => {
           const d = (dir: Dir) =>
@@ -210,6 +211,7 @@ export default function PacmanGame() {
           s.frightTimer -= 16;
           if (s.frightTimer <= 0) s.ghosts.forEach((g) => (g.frightened = false));
         }
+        if (s.grace > 0) s.grace -= 16;
         if (t - lastPac >= SPEED) { lastPac = t; stepPac(); }
         if (t - lastGhost >= GHOST_SPEED) {
           lastGhost = t;
@@ -217,7 +219,7 @@ export default function PacmanGame() {
         }
         // collisions
         for (const g of s.ghosts) {
-          if (g.x === s.pac.x && g.y === s.pac.y) {
+          if (s.grace <= 0 && g.x === s.pac.x && g.y === s.pac.y) {
             if (g.frightened) {
               g.x = GHOST_STARTS[s.ghosts.indexOf(g)].x;
               g.y = GHOST_STARTS[s.ghosts.indexOf(g)].y;
@@ -242,7 +244,13 @@ export default function PacmanGame() {
       ctx.fillRect(0, 0, w, h);
       drawMaze(ctx, s.dots, s.power);
       drawPac(ctx, s.pac, s.dir, t);
-      s.ghosts.forEach((g, i) => drawGhost(ctx, g, i));
+      s.ghosts.forEach((g, i) => {
+        if (s.grace > 0) {
+          ctx.globalAlpha = 0.35 + 0.3 * Math.sin(t / 80);
+        }
+        drawGhost(ctx, g, i);
+        ctx.globalAlpha = 1;
+      });
       if (s.status === "over" || s.status === "win") {
         ctx.fillStyle = "rgba(0,0,0,0.6)";
         ctx.fillRect(0, h / 2 - 30, w, 60);
