@@ -120,16 +120,17 @@ export default function PacmanGame() {
     status: "ready",
   });
 
-  const smooth = (p: FPos & Pos, dt: number) => {
+  const smooth = (p: FPos & Pos, rate: number, dt: number) => {
     // 穿越隧道等大跳变时直接吸附
     if (Math.abs(p.x - p.fx) > 2 || Math.abs(p.y - p.fy) > 2) {
       p.fx = p.x;
       p.fy = p.y;
       return;
     }
-    const k = 1 - Math.exp(-dt / 45);
-    p.fx += (p.x - p.fx) * k;
-    p.fy += (p.y - p.fy) * k;
+    // 匀速线性插值，速度与逻辑步进完全一致，视觉无缝
+    const step = rate * dt;
+    p.fx += Math.sign(p.x - p.fx) * Math.min(Math.abs(p.x - p.fx), step);
+    p.fy += Math.sign(p.y - p.fy) * Math.min(Math.abs(p.y - p.fy), step);
   };
 
   const reset = useCallback((full: boolean) => {
@@ -250,8 +251,8 @@ export default function PacmanGame() {
         }
         const dt = Math.min(t - (lastFrame || t), 100);
         lastFrame = t;
-        smooth(s.pac, dt);
-        s.ghosts.forEach((g) => smooth(g, dt));
+        smooth(s.pac, 1 / SPEED, dt);
+        s.ghosts.forEach((g) => smooth(g, 1 / GHOST_SPEED, dt));
         // 碰撞：只在移动步进间判定一次
         for (const g of s.ghosts) {
           if (s.grace <= 0 && g.x === s.pac.x && g.y === s.pac.y) {
