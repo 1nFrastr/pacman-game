@@ -111,6 +111,7 @@ export default function PacmanGame() {
       s.dots = MAZE.map((row) => row.map((v) => (v === 1 ? 1 : 0)));
       s.power = MAZE.map((row) => row.map((v) => (v === 2 ? 1 : 0)));
       setScore(0);
+      livesRef.current = 10;
       setLives(10);
     }
   }, []);
@@ -225,12 +226,14 @@ export default function PacmanGame() {
               g.y = GHOST_STARTS[s.ghosts.indexOf(g)].y;
               setScore((v) => v + 200);
             } else {
-              setLives((l) => {
-                const nl = l - 1;
-                if (nl <= 0) { s.status = "over"; setStatus("over"); }
-                else reset(false);
-                return nl;
-              });
+              livesRef.current -= 1;
+              setLives(livesRef.current);
+              if (livesRef.current <= 0) {
+                s.status = "over";
+                setStatus("over");
+              } else {
+                reset(false);
+              }
             }
             break;
           }
