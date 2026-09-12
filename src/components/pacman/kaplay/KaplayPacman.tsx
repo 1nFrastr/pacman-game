@@ -49,36 +49,21 @@ export default function KaplayPacman() {
           const v = MAZE[y][x];
           const p = k.vec2(x * TILE + TILE / 2, y * TILE + TILE / 2);
           if (v === 1) {
-            dots.add(`${x},${y}`);
-            k.add([k.pos(p), k.circle(2.2), k.color(255, 210, 130), k.anchor("center"), "dot", { gx: x, gy: y }]);
+            k.add([k.pos(p), k.rect(TILE - 1, TILE - 1), k.color(30, 60, 200), k.anchor("center"), "wall"]);
+          } else if (v === 3) {
+            // 幽灵房区域：空地
           } else if (v === 2) {
             power.add(`${x},${y}`);
-            k.add([k.pos(p), k.circle(4.5), k.color(255, 210, 130), k.anchor("center"), "power", { gx: x, gy: y, blink: 0 }]);
-          } else if (v === 1 + 1 && false) {} // noop
-          if (v === 1) continue;
-          if (v === 1) continue;
-          if (v === 1) continue;
-          if (v === 1) continue;
-          if (v === 1) continue;
-          if (v === 1) continue;
-          if (v === 1) continue;
-          if (v === 1) continue;
-          if (v === 1) continue;
-          if (v === 1) continue;
-          if (v === 1) continue;
-          if (v === 1) continue;
-          if (v === 1) continue;
-          if (v === 1) continue;
-          if (v === 1) continue;
-          if (v === 1) continue;
-          if (v === 1) continue;
-          if (v === 1) continue;
+            k.add([k.pos(p), k.circle(4.5), k.color(255, 210, 130), k.anchor("center"), "power", { gx: x, gy: y }]);
+          } else {
+            dots.add(`${x},${y}`);
+            k.add([k.pos(p), k.circle(2.2), k.color(255, 210, 130), k.anchor("center"), "dot", { gx: x, gy: y }]);
+          }
         }
       }
     };
     void wallCol;
     void buildLevel;
-
     // ---- 实体 ----
     const spawnPac = () => {
       pac = k.add([
