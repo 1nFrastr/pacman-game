@@ -34,7 +34,9 @@ export function attachGhostDraw(obj: GameObj, k: Ctx, graceRef: { v: number }) {
     if (graceRef.v > 0) obj.opacity = 0.45 + 0.3 * Math.sin(k.time() * 12);
     else obj.opacity = 1;
     const r = 8.5;
-    const body = gd.frightened ? BLUE(k.rgb) : k.rgb(...(obj.gd.color as [number, number, number]));
+    const body = gd.frightened
+      ? BLUE(k.rgb)
+      : (k as any).Color.fromHex(obj.gd.color as string);
     k.drawCircle({ pos: k.vec2(0, -2), radius: r, color: body });
     k.drawRect({ pos: k.vec2(-r, -2), width: r * 2, height: r, color: body });
     // 底部波浪
