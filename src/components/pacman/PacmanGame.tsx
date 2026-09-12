@@ -278,7 +278,7 @@ export default function PacmanGame() {
     <div className="flex flex-col items-center gap-4 select-none">
       <div className="flex items-center gap-8 text-lg font-semibold text-foreground">
         <span>得分 <span className="text-yellow-400">{score}</span></span>
-        <span>生命 ❤️×{Math.max(lives, 0)}</span>
+        <span>生命 {"❤️".repeat(Math.max(lives, 0))}</span>
       </div>
       <canvas
         ref={canvasRef}
