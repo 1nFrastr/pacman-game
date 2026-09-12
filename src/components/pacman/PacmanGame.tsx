@@ -7,7 +7,8 @@ import {
 } from "./constants";
 
 type Pos = { x: number; y: number };
-type Ghost = Pos & { dir: Dir; frightened: boolean };
+type FPos = { fx: number; fy: number };
+type Ghost = Pos & FPos & { dir: Dir; frightened: boolean };
 
 const SPEED = 170; // ms per tile
 const GHOST_SPEED = 260;
@@ -39,9 +40,9 @@ function drawMaze(ctx: CanvasRenderingContext2D, dots: number[][], power: number
   }
 }
 
-function drawPac(ctx: CanvasRenderingContext2D, p: Pos, dir: Dir, t: number, frozen: boolean) {
+function drawPac(ctx: CanvasRenderingContext2D, p: FPos, dir: Dir, t: number, frozen: boolean) {
   const angleMap: Record<Dir, number> = { right: 0, down: Math.PI / 2, left: Math.PI, up: -Math.PI / 2 };
-  const cx = p.x * TILE + TILE / 2, cy = p.y * TILE + TILE / 2;
+  const cx = p.fx * TILE + TILE / 2, cy = p.fy * TILE + TILE / 2;
   const open = frozen ? 0.4 : Math.abs(Math.sin(t / 120)) * 0.8;
   ctx.save();
   ctx.translate(cx, cy);
@@ -93,6 +94,8 @@ type GameState = {
 function freshGhosts(): Ghost[] {
   return GHOST_STARTS.map((g, i) => ({
     ...g,
+    fx: g.x,
+    fy: g.y,
     dir: (["up", "left", "down", "right"] as Dir[])[i],
     frightened: false,
   }));
@@ -117,9 +120,21 @@ export default function PacmanGame() {
     status: "ready",
   });
 
+  const smooth = (p: FPos & Pos, dt: number) => {
+    // 穿越隧道等大跳变时直接吸附
+    if (Math.abs(p.x - p.fx) > 2 || Math.abs(p.y - p.fy) > 2) {
+      p.fx = p.x;
+      p.fy = p.y;
+      return;
+    }
+    const k = 1 - Math.exp(-dt / 45);
+    p.fx += (p.x - p.fx) * k;
+    p.fy += (p.y - p.fy) * k;
+  };
+
   const reset = useCallback((full: boolean) => {
     const s = state.current;
-    s.pac = { ...START };
+    s.pac = { ...START, fx: START.x, fy: START.y };
     s.dir = "left";
     s.nextDir = "left";
     s.ghosts = freshGhosts();
@@ -163,7 +178,7 @@ export default function PacmanGame() {
   useEffect(() => {
     const canvas = canvasRef.current!;
     const ctx = canvas.getContext("2d")!;
-    let lastPac = 0, lastGhost = 0, raf = 0;
+    let lastPac = 0, lastGhost = 0, lastFrame = 0, raf = 0;
 
     const move = (p: Pos, dir: Dir) => {
       const [dx, dy] = DIRS[dir];
@@ -233,6 +248,10 @@ export default function PacmanGame() {
           lastGhost = t;
           s.ghosts.forEach((g, i) => stepGhost(g, i));
         }
+        const dt = Math.min(t - (lastFrame || t), 100);
+        lastFrame = t;
+        smooth(s.pac, dt);
+        s.ghosts.forEach((g) => smooth(g, dt));
         // 碰撞：只在移动步进间判定一次
         for (const g of s.ghosts) {
           if (s.grace <= 0 && g.x === s.pac.x && g.y === s.pac.y) {
@@ -240,6 +259,8 @@ export default function PacmanGame() {
               const home = GHOST_STARTS[s.ghosts.indexOf(g)];
               g.x = home.x;
               g.y = home.y;
+              g.fx = home.x;
+              g.fy = home.y;
               g.frightened = false;
               setScore((v) => v + 200);
             } else {
