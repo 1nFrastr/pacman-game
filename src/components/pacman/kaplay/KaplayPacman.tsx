@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import kaplay from "kaplay";
-import { COLS, DIRS, GHOST_COLORS, GHOST_STARTS, MAZE, ROWS, START, TILE } from "../constants";
+import { COLS, GHOST_COLORS, GHOST_STARTS, MAZE, ROWS, START, TILE } from "../constants";
 import { attachGhostDraw, attachPacDraw } from "./draw";
 
 type Vec2 = { x: number; y: number };
@@ -34,6 +34,8 @@ export default function KaplayPacman() {
     });
 
     const wallCol = k.rgb(30, 60, 200);
+    const graceRef = { v: 0 };
+    const DIR_LIST = ["up", "left", "down", "right"] as const;
     let score = 0, lives = 10, status: Hud["status"] = "ready";
     let dots = new Set<string>(), power = new Set<string>();
     let frightTimer = 0, grace = 0;
@@ -86,8 +88,7 @@ export default function KaplayPacman() {
         attachGhostDraw(gh, k, graceRef);
         return gh;
       });
-    };
-    const graceRef = { v: 0 };
+    }
 
     function cx(x: number) { return x * TILE + TILE / 2; }
     function cy(y: number) { return y * TILE + TILE / 2; }
