@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   COLS, DIRS, GHOST_COLORS, GHOST_STARTS, MAZE, ROWS, START, TILE,
-  canMove, isWall, tileAt, type Dir,
+  canMove, isWall, type Dir,
 } from "./constants";
 
 type Pos = { x: number; y: number };
@@ -11,6 +11,7 @@ type Ghost = Pos & { dir: Dir; frightened: boolean };
 
 const SPEED = 170; // ms per tile
 const GHOST_SPEED = 260;
+const MAX_LIVES = 10;
 
 function opposite(d: Dir): Dir {
   return d === "up" ? "down" : d === "down" ? "up" : d === "left" ? "right" : "left";
@@ -38,10 +39,10 @@ function drawMaze(ctx: CanvasRenderingContext2D, dots: number[][], power: number
   }
 }
 
-function drawPac(ctx: CanvasRenderingContext2D, p: Pos, dir: Dir, t: number) {
+function drawPac(ctx: CanvasRenderingContext2D, p: Pos, dir: Dir, t: number, frozen: boolean) {
   const angleMap: Record<Dir, number> = { right: 0, down: Math.PI / 2, left: Math.PI, up: -Math.PI / 2 };
   const cx = p.x * TILE + TILE / 2, cy = p.y * TILE + TILE / 2;
-  const open = Math.abs(Math.sin(t / 120)) * 0.8;
+  const open = frozen ? 0.4 : Math.abs(Math.sin(t / 120)) * 0.8;
   ctx.save();
   ctx.translate(cx, cy);
   ctx.rotate(angleMap[dir]);
@@ -77,27 +78,43 @@ function drawGhost(ctx: CanvasRenderingContext2D, g: Ghost, i: number) {
   }
 }
 
+type GameState = {
+  dots: number[][];
+  power: number[][];
+  pac: Pos;
+  dir: Dir;
+  nextDir: Dir;
+  ghosts: Ghost[];
+  frightTimer: number;
+  grace: number;
+  status: "ready" | "playing" | "over" | "win";
+};
+
+function freshGhosts(): Ghost[] {
+  return GHOST_STARTS.map((g, i) => ({
+    ...g,
+    dir: (["up", "left", "down", "right"] as Dir[])[i],
+    frightened: false,
+  }));
+}
+
 export default function PacmanGame() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [score, setScore] = useState(0);
   const [status, setStatus] = useState<"ready" | "playing" | "over" | "win">("ready");
-  const [lives, setLives] = useState(10);
+  const [lives, setLives] = useState(MAX_LIVES);
+  const livesRef = useRef(MAX_LIVES);
 
-  const state = useRef({
+  const state = useRef<GameState>({
     dots: MAZE.map((row) => row.map((v) => (v === 1 ? 1 : 0))),
     power: MAZE.map((row) => row.map((v) => (v === 2 ? 1 : 0))),
     pac: { ...START },
-    dir: "left" as Dir,
-    nextDir: "left" as Dir,
-    ghosts: GHOST_STARTS.map((s, i) => ({
-      ...s,
-      dir: (["up", "left", "down", "right"] as Dir[])[i],
-      frightened: false,
-    })),
+    dir: "left",
+    nextDir: "left",
+    ghosts: freshGhosts(),
     frightTimer: 0,
     grace: 2200,
-    anim: 0,
-    status: "ready" as typeof status,
+    status: "ready",
   });
 
   const reset = useCallback((full: boolean) => {
@@ -105,14 +122,15 @@ export default function PacmanGame() {
     s.pac = { ...START };
     s.dir = "left";
     s.nextDir = "left";
-    s.ghosts = GHOST_STARTS.map((g, i) => ({ ...g, dir: (["up", "left", "down", "right"] as Dir[])[i], frightened: false }));
+    s.ghosts = freshGhosts();
     s.frightTimer = 0;
+    s.grace = 2200;
     if (full) {
       s.dots = MAZE.map((row) => row.map((v) => (v === 1 ? 1 : 0)));
       s.power = MAZE.map((row) => row.map((v) => (v === 2 ? 1 : 0)));
       setScore(0);
-      livesRef.current = 10;
-      setLives(10);
+      livesRef.current = MAX_LIVES;
+      setLives(MAX_LIVES);
     }
   }, []);
 
@@ -175,18 +193,17 @@ export default function PacmanGame() {
 
     const stepGhost = (g: Ghost, idx: number) => {
       const s = state.current;
-      const options: Dir[] = ["up", "left", "down", "right"].filter(
+      const options: Dir[] = (["up", "left", "down", "right"] as Dir[]).filter(
         (d) => !isWall(g.x + DIRS[d][0], g.y + DIRS[d][1]) && d !== opposite(g.dir)
       );
       if (options.length === 0) {
         const back = opposite(g.dir);
         if (!isWall(g.x + DIRS[back][0], g.y + DIRS[back][1])) options.push(back);
       }
-      let chosen: Dir;
+      let chosen: Dir | undefined;
       if (g.frightened) {
         chosen = options[Math.floor(Math.random() * options.length)];
       } else if (idx === 0 && Math.random() < 0.4) {
-        // chase: minimize distance to pac
         options.sort((a, b) => {
           const d = (dir: Dir) =>
             Math.abs(g.x + DIRS[dir][0] - s.pac.x) + Math.abs(g.y + DIRS[dir][1] - s.pac.y);
@@ -205,9 +222,7 @@ export default function PacmanGame() {
     const loop = (t: number) => {
       raf = requestAnimationFrame(loop);
       const s = state.current;
-      if (s.status !== "playing") {
-        // idle render
-      } else {
+      if (s.status === "playing") {
         if (s.frightTimer > 0) {
           s.frightTimer -= 16;
           if (s.frightTimer <= 0) s.ghosts.forEach((g) => (g.frightened = false));
@@ -218,12 +233,14 @@ export default function PacmanGame() {
           lastGhost = t;
           s.ghosts.forEach((g, i) => stepGhost(g, i));
         }
-        // collisions
+        // 碰撞：只在移动步进间判定一次
         for (const g of s.ghosts) {
           if (s.grace <= 0 && g.x === s.pac.x && g.y === s.pac.y) {
             if (g.frightened) {
-              g.x = GHOST_STARTS[s.ghosts.indexOf(g)].x;
-              g.y = GHOST_STARTS[s.ghosts.indexOf(g)].y;
+              const home = GHOST_STARTS[s.ghosts.indexOf(g)];
+              g.x = home.x;
+              g.y = home.y;
+              g.frightened = false;
               setScore((v) => v + 200);
             } else {
               livesRef.current -= 1;
@@ -239,16 +256,15 @@ export default function PacmanGame() {
           }
         }
       }
-      s.anim = t;
 
       // render
       const w = COLS * TILE, h = ROWS * TILE;
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, w, h);
       drawMaze(ctx, s.dots, s.power);
-      drawPac(ctx, s.pac, s.dir, t);
+      drawPac(ctx, s.pac, s.dir, t, s.status === "win" || s.status === "over");
       s.ghosts.forEach((g, i) => {
-        if (s.grace > 0) {
+        if (s.grace > 0 && s.status === "playing") {
           ctx.globalAlpha = 0.35 + 0.3 * Math.sin(t / 80);
         }
         drawGhost(ctx, g, i);
@@ -268,7 +284,6 @@ export default function PacmanGame() {
         ctx.textAlign = "center";
         ctx.fillText("按方向键开始", w / 2, h / 2);
       }
-      void tileAt;
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
