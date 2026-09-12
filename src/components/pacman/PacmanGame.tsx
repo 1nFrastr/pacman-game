@@ -81,7 +81,7 @@ export default function PacmanGame() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [score, setScore] = useState(0);
   const [status, setStatus] = useState<"ready" | "playing" | "over" | "win">("ready");
-  const [lives, setLives] = useState(3);
+  const [lives, setLives] = useState(10);
 
   const state = useRef({
     dots: MAZE.map((row) => row.map((v) => (v === 1 ? 1 : 0))),
@@ -111,7 +111,7 @@ export default function PacmanGame() {
       s.dots = MAZE.map((row) => row.map((v) => (v === 1 ? 1 : 0)));
       s.power = MAZE.map((row) => row.map((v) => (v === 2 ? 1 : 0)));
       setScore(0);
-      setLives(3);
+      setLives(10);
     }
   }, []);
 
@@ -275,7 +275,7 @@ export default function PacmanGame() {
     <div className="flex flex-col items-center gap-4 select-none">
       <div className="flex items-center gap-8 text-lg font-semibold text-foreground">
         <span>得分 <span className="text-yellow-400">{score}</span></span>
-        <span>生命 {"❤️".repeat(Math.max(lives, 0))}</span>
+        <span>生命 ❤️×{Math.max(lives, 0)}</span>
       </div>
       <canvas
         ref={canvasRef}
