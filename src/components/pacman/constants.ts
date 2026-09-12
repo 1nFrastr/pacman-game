@@ -38,12 +38,12 @@ export const DIRS: Record<Dir, [number, number]> = {
 export const GHOST_COLORS = ["#ff4d4d", "#ffb8ff", "#4dffff", "#ffb84d"];
 export const GHOST_STARTS: { x: number; y: number }[] = [
   { x: 9, y: 8 },
-  { x: 7, y: 10 },
-  { x: 9, y: 10 },
-  { x: 11, y: 10 },
+  { x: 5, y: 11 },
+  { x: 9, y: 11 },
+  { x: 13, y: 11 },
 ];
 
-export const START = { x: 9, y: 16 };
+export const START = { x: 9, y: 3 };
 
 export function tileAt(c: number, r: number): number {
   if (r < 0 || r >= ROWS) return 0;
